@@ -28,14 +28,13 @@ let top n elves =
     | x :: xs -> if k = 1 then [x] else x :: f' (k-1) xs
   in f' n (List.rev sorted)
 
-let solve file_name =
-  let top3 = 
-    read_file file_name 
-    |> combined_weights 
-    |> top 3 
-  in
-  printf "part 1:\t%d\n" @@ List.nth top3 0;
-  printf "part 2:\t%d\n" @@ List.fold_left (+) 0 top3
+let top3 = read_file file_name
+  |> combined_weights
+  |> top 3
 
-let () = solve file_name
+let part1 = List.nth top3 0
+let part2 = List.fold_left (+) 0 top3
+  
+let () = printf "part 1:\t%d\npart 2:\t%d\n" part1 part2;
+
 
