@@ -15,8 +15,8 @@ let read_file file =
 let combined_weights lines = 
   let rec f' elves c lines =
     match lines with
-    | [] -> elves
-    | ("" :: xs) | (_ :: [] as xs) -> f' (elves @ [c]) 0 xs
+    | [] -> if c = 0 then elves else elves @ [c]
+    | ("" :: xs) -> f' (elves @ [c]) 0 xs
     | x :: xs -> f' elves (c + int_of_string x) xs
   in f' [] 0 lines
 
@@ -35,5 +35,5 @@ let top3 = read_file file_name
 let part1 = List.nth top3 0
 let part2 = List.fold_left (+) 0 top3
 
-let () = printf "part 1:\t%d\npart 2:\t%d\n" part1 part2;
+let () = printf "part 1:\t%d\npart 2:\t%d\n" part1 part2
 
