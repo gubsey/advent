@@ -6,6 +6,7 @@ use std::{
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Card {
+    Joker,
     Two,
     Three,
     Four,
@@ -21,14 +22,36 @@ pub enum Card {
     Ace,
 }
 
+impl Card {
+    pub fn jack_to_joker(self) -> Self {
+        if self == Self::Jack {
+            Self::Joker
+        } else {
+            self
+        }
+    }
+}
+
 impl From<char> for Card {
     fn from(value: char) -> Self {
-        use Card::*;
+        use Card as C;
         "AKQJT"
             .chars()
             .chain(('2'..='9').rev())
             .zip([
-                Ace, King, Queen, Jack, Ten, Nine, Eight, Seven, Six, Five, Four, Three, Two,
+                C::Ace,
+                C::King,
+                C::Queen,
+                C::Jack,
+                C::Ten,
+                C::Nine,
+                C::Eight,
+                C::Seven,
+                C::Six,
+                C::Five,
+                C::Four,
+                C::Three,
+                C::Two,
             ])
             .find(|(a, _)| *a == value)
             .unwrap()
