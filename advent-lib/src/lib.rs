@@ -14,6 +14,8 @@ impl MyFn for FF {
     }
 }
 
+trait AdventFn: Fn(&str) -> String + 'static {}
+
 type FF = Box<dyn Fn(&str) -> String + 'static>;
 
 #[derive(Default)]
@@ -32,10 +34,10 @@ impl AdventParts {
         }
     }
 
-    pub fn part1(self, f: impl Fn(&str) -> String + 'static) -> Self {
+    pub fn part1(f: impl Fn(&str) -> String + 'static) -> Self {
         Self {
             p1: Some(Box::new(f)),
-            ..self
+            ..Default::default()
         }
     }
 
