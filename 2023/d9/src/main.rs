@@ -1,47 +1,37 @@
-use std::{num::ParseIntError, path::Iter, str::FromStr, vec};
+use std::{str::FromStr, vec};
 use tap::Pipe;
 
 type Num = i32;
 
 fn main() {
-    advent_lib::AdventParts::part1(p1)
-        .part2(p2)
-        //.example()
-        .run();
+    advent_lib::AdventParts::part1(p1).part2(p2).run();
 }
 
 fn p1(input: &str) -> String {
-    let reports: Vec<Report> = input
-        .lines()
-        .map(str::parse)
-        .collect::<Result<_, _>>()
-        .unwrap();
-
-    reports
-        .into_iter()
-        .map(|mut x| x.next().unwrap())
-        .sum::<i32>()
-        .to_string()
+    solve(input, |x| *x.last().unwrap(), |a, b| a + b).to_string()
 }
 
 fn p2(input: &str) -> String {
-    let reports: Vec<Report> = input
+    solve(input, |x| x[0], |a, b| b - a).to_string()
+}
+
+fn solve(
+    input: &str,
+    map: impl Fn(Vec<i32>) -> i32 + Copy,
+    reduce: impl Fn(i32, i32) -> i32 + Copy,
+) -> i32 {
+    get_reports(input)
+        .into_iter()
+        .map(|x| x.0.into_iter().map(map).rev().reduce(reduce).unwrap())
+        .sum()
+}
+
+fn get_reports(input: &str) -> Vec<Report> {
+    input
         .lines()
         .map(str::parse)
         .collect::<Result<_, _>>()
-        .unwrap();
-
-    reports
-        .into_iter()
-        .map(|x| {
-            x.0.into_iter()
-                .map(|x| x[0])
-                .rev()
-                .reduce(|a, b| b - a)
-                .unwrap()
-        })
-        .sum::<i32>()
-        .to_string()
+        .unwrap()
 }
 
 #[derive(Debug)]
@@ -65,20 +55,6 @@ impl Report {
         }
 
         Report(r)
-    }
-}
-
-impl Iterator for Report {
-    type Item = Num;
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut last = 0;
-
-        for v in self.0.iter_mut().rev() {
-            last += v.last().unwrap();
-            v.push(last);
-        }
-
-        Some(last)
     }
 }
 
