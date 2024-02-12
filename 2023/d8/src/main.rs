@@ -115,8 +115,41 @@ const fn gcd(a: u64, b: u64) -> u64 {
 }
 
 const fn lcm(nums: &[u64]) -> u64 {
-    let &[a, ref xs @ ..] = nums else { return 1 };
+    let [x, xs @ ..] = nums else { return 1 };
 
+    let a = *x;
     let b = lcm(xs);
+
     a * (b / gcd(a, b))
+}
+
+const fn gcd2(a: u64, b: u64) -> u64 {
+    if b == 0 {
+        a
+    } else {
+        gcd(b, a % b)
+    }
+}
+
+const fn lcm2(nums: &[u64]) -> u64 {
+    if let [x, xs @ ..] = nums {
+        let a = *x;
+        let b = lcm(xs);
+
+        a * (b / gcd(a, b))
+    } else {
+        1
+    }
+}
+
+const fn lcm3(nums: &[u64]) -> u64 {
+    match nums {
+        [x, xs @ ..] => {
+            let a = *x;
+            let b = lcm(xs);
+
+            a * (b / gcd(a, b))
+        }
+        [] => 1,
+    }
 }

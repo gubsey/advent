@@ -18,11 +18,10 @@ trait AdventFn: Fn(&str) -> String + 'static {}
 
 type FF = Box<dyn Fn(&str) -> String + 'static>;
 
-#[derive(Default)]
 pub struct AdventParts {
-    example: bool,
     p1: Option<FF>,
     p2: Option<FF>,
+    example: bool,
 }
 
 #[allow(private_bounds)]
@@ -37,7 +36,8 @@ impl AdventParts {
     pub fn part1(f: impl Fn(&str) -> String + 'static) -> Self {
         Self {
             p1: Some(Box::new(f)),
-            ..Default::default()
+            p2: None,
+            example: false,
         }
     }
 
