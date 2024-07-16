@@ -1,63 +1,82 @@
 const std = @import("std");
 
 pub fn main() !void {
-    const map = try parse_valves(std.heap.page_allocator);
-    defer map.deinit();
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer if (gpa.deinit() == .leak) std.process.exit(1);
+    const alloc = gpa.allocator();
 
-    var it = map.map.iterator();
-    while (it.next()) |entry| {
-        std.debug.print("{s}", .{entry});
+    var valves = try load_valves(alloc, "../example.txt");
+    defer destroy_valve_map(&valves) catch unreachable;
+
+    var valve_iter = valves.iterator();
+    while (valve_iter.next()) |entry| {
+        std.debug.print("{s} : {d} {s}\n", .{ entry.key_ptr.*, entry.value_ptr.*.flow_rate, entry.value_ptr.tunnels });
     }
 }
 
-fn parse_valves(alloc: std.mem.Allocator) !std.StringHashMap(Valve) {
-    const buf = try std.fs.cwd()
-        .readFileAlloc(alloc, "../example.txt", 99999999);
-    defer alloc.free(buf);
+fn load_valves(alloc: std.mem.Allocator, file_str: []const u8) !std.StringHashMap(Valve) {
+    const file = try std.fs.cwd()
+        .readFileAlloc(alloc, file_str, 1024 * 1024);
+    defer alloc.free(file);
 
     var map = std.StringHashMap(Valve).init(alloc);
 
-    var lines = std.mem.tokenizeAny(u8, buf, "\n");
+    var lines = std.mem.tokenizeAny(u8, file, "\n");
     while (lines.next()) |line| {
-        var it = std.mem.tokenizeAny(u8, line, " =;");
+        var words_iter = std.mem.tokenizeAny(u8, line, " =;,");
 
-        var wordslist = std.ArrayList([]const u8).init(alloc);
-        defer wordslist.deinit();
+        var words_list = std.ArrayList([]const u8).init(alloc);
+        defer words_list.deinit();
 
-        while (it.next()) |word| {
-            try wordslist.append(word);
+        while (words_iter.next()) |word| {
+            try words_list.append(word);
+        }
+        const words = words_list.items;
+
+        const name = try alloc.dupe(u8, words[1]);
+        const flow_rate = try std.fmt.parseInt(i32, words[5], 10);
+
+        var tunnels = std.ArrayList([]const u8).init(alloc);
+        for (words[10..]) |word| {
+            try tunnels.append(try alloc.dupe(u8, word));
         }
 
-        const rate = try std.fmt.parseInt(i32, alloc.dupe(u8, wordslist.items[5]), 10);
-        const leads = std.ArrayList([]const u8).fromOwnedSlice(alloc, wordslist.items[10..]);
-
-        try map.put(alloc.dupe(u8, wordslist.items[1]), .{ .flow_rate = rate, .tunnels = leads.toOwnedSlice() });
+        try map.put(name, .{ .flow_rate = flow_rate, .tunnels = try tunnels.toOwnedSlice(), .open = false });
     }
 
     return map;
 }
 
-const MyMap = struct {
-    map: std.StringHashMap(Valve),
-    strings: [][]const u8,
+test "parse example file" {
+    var valves = try load_valves(std.testing.allocator, "../example.txt");
+    defer destroy_valve_map(&valves) catch unreachable;
 
-    fn deinit(self: *@This()) void {
-        self.map.deinit();
-        //self.strings.deinit();
+    var valve_iter = valves.iterator();
+    while (valve_iter.next()) |entry| {
+        std.debug.print("{s} : {d} {s}\n", .{ entry.key_ptr.*, entry.value_ptr.*.flow_rate, entry.value_ptr.tunnels });
     }
-};
-
-fn hash_string(str: std.ArrayList(u8)) void {
-    std.hash.Fnv1a_32.hash(str.items);
 }
 
-test "parse values" {
-    var map = try parse_valves(std.testing.allocator);
-    std.debug.print("{s}", .{map.strings.items[0]});
-    map.deinit();
+fn destroy_valve_map(valves: *std.StringHashMap(Valve)) !void {
+    var keys = valves.keyIterator();
+    while (keys.next()) |key| {
+        var entry = valves.fetchRemove(key.*).?;
+        entry.value.deinit(valves.allocator);
+        valves.allocator.free(entry.key);
+        keys = valves.keyIterator();
+    }
+    valves.deinit();
 }
 
 const Valve = struct {
     flow_rate: i32,
-    tunnels: std.ArrayList([]const u8),
+    tunnels: [][]const u8,
+    open: bool,
+
+    fn deinit(self: *@This(), alloc: std.mem.Allocator) void {
+        for (self.tunnels) |word| {
+            alloc.free(word);
+        }
+        alloc.free(self.tunnels);
+    }
 };
