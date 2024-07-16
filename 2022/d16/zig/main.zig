@@ -6,7 +6,7 @@ pub fn main() !void {
     const alloc = gpa.allocator();
 
     var valves = try load_valves(alloc, "../example.txt");
-    defer destroy_valve_map(&valves) catch unreachable;
+    defer destroy_valve_map(&valves);
 
     var valve_iter = valves.iterator();
     while (valve_iter.next()) |entry| {
@@ -49,15 +49,11 @@ fn load_valves(alloc: std.mem.Allocator, file_str: []const u8) !std.StringHashMa
 
 test "parse example file" {
     var valves = try load_valves(std.testing.allocator, "../example.txt");
-    defer destroy_valve_map(&valves) catch unreachable;
-
-    var valve_iter = valves.iterator();
-    while (valve_iter.next()) |entry| {
-        std.debug.print("{s} : {d} {s}\n", .{ entry.key_ptr.*, entry.value_ptr.*.flow_rate, entry.value_ptr.tunnels });
-    }
+    defer destroy_valve_map(&valves);
+    try std.testing.expect(valves.count() == 10);
 }
 
-fn destroy_valve_map(valves: *std.StringHashMap(Valve)) !void {
+fn destroy_valve_map(valves: *std.StringHashMap(Valve)) void {
     var keys = valves.keyIterator();
     while (keys.next()) |key| {
         var entry = valves.fetchRemove(key.*).?;
