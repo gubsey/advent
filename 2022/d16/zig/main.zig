@@ -5,16 +5,11 @@ const INF = "∞";
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    //defer if (gpa.deinit() == .leak) std.process.exit(1);
     const alloc = gpa.allocator();
 
-    const dir = try std.fs.cwd().openDir(".", .{ .iterate = true });
-    var files = dir.iterate();
-    while (try files.next()) |file| {
-        std.debug.print("{s}\n", .{file.name});
-    }
+    const args = try std.process.argsAlloc(alloc);
 
-    var valves = try load_valves(alloc, "example.txt");
+    var valves = try load_valves(alloc, args[1]);
     defer destroy_valve_map(&valves);
 
     var valve_iter = valves.iterator();
@@ -64,7 +59,6 @@ fn valve_map_to_start_floyd(map: Map) !Florshall {
     var key_iter = map.keyIterator();
     var key_list = std.ArrayList([]const u8).init(map.allocator);
     while (key_iter.next()) |key| {
-        // if (map.get(key.*).?.flow_rate == 0 and !std.mem.eql(u8, key.*, "AA")) continue;
         try key_list.append(key.*);
     }
     const keys = try key_list.toOwnedSlice();
@@ -103,9 +97,10 @@ const Florshall = struct {
     table: [][]?i32,
 
     fn print(self: @This()) void {
+        const padding = 3;
         std.debug.print("   ", .{});
         for (self.keys) |key| {
-            std.debug.print("{s:>4}", .{key});
+            std.debug.print("{s:>[1]}", .{ key, padding });
         }
         std.debug.print("\n", .{});
         for (self.table, 0..) |row, i| {
@@ -114,9 +109,9 @@ const Florshall = struct {
                 if (cell) |x| {
                     var buf: [20]u8 = undefined;
                     const s = std.fmt.bufPrint(&buf, "{d}", .{x}) catch unreachable;
-                    std.debug.print("{s:4}", .{s});
+                    std.debug.print("{s:[1]}", .{ s, padding });
                 } else {
-                    std.debug.print("{s:>4}", .{INF});
+                    std.debug.print("{s:>[1]}", .{ INF, padding });
                 }
             }
             std.debug.print("\n", .{});
@@ -146,9 +141,9 @@ fn load_valves(alloc: std.mem.Allocator, file_str: []const u8) !Map {
         const name = try alloc.dupe(u8, words[1]);
         const flow_rate = try std.fmt.parseInt(i32, words[5], 10);
 
-        var tunnels = std.ArrayList([]const u8).init(alloc);
+        var tunnels = std.StringHashMap(void).init(alloc);
         for (words[10..]) |word| {
-            try tunnels.append(try alloc.dupe(u8, word));
+            try tunnels.put(try alloc.dupe(u8, word), {});
         }
 
         try map.put(name, .{ .flow_rate = flow_rate, .tunnels = try tunnels.toOwnedSlice(), .open = false });
@@ -176,7 +171,7 @@ fn destroy_valve_map(valves: *Map) void {
 
 const Valve = struct {
     flow_rate: i32,
-    tunnels: [][]const u8,
+    tunnels: std.StringHashMap(void),
     open: bool,
 
     fn deinit(self: *@This(), alloc: std.mem.Allocator) void {
