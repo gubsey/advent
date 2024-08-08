@@ -1,6 +1,5 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const AnyReader = std.io.AnyReader;
 
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -8,10 +7,7 @@ pub fn main() !void {
     const alloc = arena.allocator();
 
     const rocks = try Rock.get_rocks(alloc);
-    for (rocks) |rock| {
-        rock.print();
-        std.debug.print("\n", .{});
-    }
+    const stdin = try std.io.getStdIn().readToEndAlloc(alloc, 64 * 1024);
 }
 
 const Rock = struct {
@@ -57,10 +53,15 @@ const Rock = struct {
                 const p: u8 = if (cell) '#' else '.';
 
                 std.debug.print("{c}", .{p});
+                std.io.getStdOut().writer();
             }
             std.debug.print("\n", .{});
         }
     }
 };
 
-const Direction = enum { Right, Left };
+const RockFall = struct {
+    sets: std.ArrayList([]bool),
+    width: i32 = 7,
+    alloc: Allocator,
+};
