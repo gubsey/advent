@@ -10,18 +10,16 @@ pub fn main() !void {
 
     const input = try get_stdin(alloc);
 
-    const empty_row: [7]Cell = .{ N, N, N, N, N, N, N };
-
     var new_stage = Stage{
         .cells = std.ArrayList([7]Cell).init(alloc),
     };
 
     var selected_shape: usize = 0;
 
-    for (input) |dir| {
-        if (floating == null) {
+    for (input) |char| {
+        if (new_stage.float == null) {
             if (selected_shape >= SHAPES.len) selected_shape = 0;
-            floating = .{
+            new_stage.float = .{
                 .position = Point{
                     .x = 2,
                     .y = new_stage.height + 3,
@@ -30,15 +28,55 @@ pub fn main() !void {
             };
             selected_shape += 1;
         }
-        std.debug.print("{c}\n{any}\n", .{ dir, floating.?.position });
 
-        const float = &floating.?;
+        const dir = switch (char) {
+            '<' => Direction.Left,
+            '>' => Direction.Right,
+            else => return error.InvalidCharacterInput,
+        };
 
-        ////////////////////
+        try new_stage.move(dir);
+    }
+
+    std.debug.print("\n", .{});
+}
+
+const Stage = struct {
+    cells: std.ArrayList([7]Cell),
+    height: usize = 0,
+    float: ?FallingShape = null,
+
+    fn move(self: *@This(), dir: Direction) !void {
+        if (self.float == null) return;
+        const float = &self.float.?;
+
+        while (self.cells.items.len < float.position.y + float.shape.height) {
+            var row: [7]Cell = undefined;
+            @memset(&row, .N);
+            try self.cells.append(row);
+        }
+
+        switch (dir) {
+            .Left => if (float.position.x > 0) {
+                float.position.x -= 1;
+            },
+            .Right => if (float.position.x + float.shape.width < 7) {
+                float.position.x += 1;
+            },
+        }
+
+        if (float.position.y == 0) {
+            self.set(float.*);
+            self.height = float.position.y + float.shape.height;
+
+            self.float = null;
+            return;
+        }
 
         float.position.y -= 1;
 
-        if (float.position.y > new_stage.height) continue;
+        if (float.position.y > self.height) return;
+
         var still_falling = false;
 
         outer: for (0..float.shape.height) |shape_y| {
@@ -46,7 +84,7 @@ pub fn main() !void {
             for (0..float.shape.width) |shape_x| {
                 const stage_x = shape_x + float.position.x;
 
-                const stage_cell = new_stage.cells.items[stage_y][stage_x];
+                const stage_cell = self.cells.items[stage_y][stage_x];
                 const shape_cell = float.shape.cells[shape_y][shape_x];
 
                 if (shape_cell == .Y and stage_cell == .Y) {
@@ -57,20 +95,12 @@ pub fn main() !void {
             }
         }
 
-        if (still_falling) continue;
+        if (still_falling) return;
 
-        new_stage.set(float);
+        self.set(float);
 
-        floating = null;
+        self.float = null;
     }
-
-    std.debug.print("\n", .{});
-}
-
-const Stage = struct {
-    cells: std.ArrayList([7]Cell),
-    height: usize = 0,
-    float: ?FallingShape,
 
     fn init(alloc: std.mem.Allocator) @This() {
         return .{
@@ -114,34 +144,6 @@ const Stage = struct {
                 std.debug.print("{c}", .{c});
             }
             std.debug.print("\n", .{});
-        }
-    }
-
-    fn move(self: *@This(), dir: Direction) void {
-        if (self.float == null) return;
-        const float = &self.float.?;
-
-        while (self.cells.items.len < float.position.y + float.shape.height) {
-            var row: [7]Cell = undefined;
-            @memset(&row, .N);
-            try self.cells.append(row);
-        }
-
-        switch (dir) {
-            .Left => if (float.position.x > 0) {
-                float.position.x -= 1;
-            },
-            .Right => if (float.position.x + float.shape.width < 7) {
-                float.position.x += 1;
-            },
-        }
-
-        if (self.float.position.y == 0) {
-            self.set(float);
-            self.height = float.position.y + float.shape.height;
-
-            self.floating = null;
-            return;
         }
     }
 };
