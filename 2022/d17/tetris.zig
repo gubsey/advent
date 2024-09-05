@@ -14,20 +14,15 @@ pub fn main() !void {
         .cells = std.ArrayList([7]Cell).init(alloc),
     };
 
-    var selected_shape: usize = 0;
+    var i: usize = 0;
+    while (true) {
+        if (new_stage.shapei > 2022) break;
+        const char = input[i % input.len];
+        defer i += 1;
 
-    for (input) |char| {
-        if (new_stage.float == null) {
-            if (selected_shape >= SHAPES.len) selected_shape = 0;
-            new_stage.float = .{
-                .position = Point{
-                    .x = 2,
-                    .y = new_stage.height + 3,
-                },
-                .shape = SHAPES[selected_shape],
-            };
-            selected_shape += 1;
-        }
+        // const h = try std.io.getStdIn().reader().readByte();
+        // std.debug.print("{c}\n", .{char});
+        // _ = h;
 
         const dir = switch (char) {
             '<' => Direction.Left,
@@ -38,24 +33,59 @@ pub fn main() !void {
         try new_stage.move(dir);
     }
 
-    std.debug.print("\n", .{});
+    std.debug.print("{d}\n", .{new_stage.height});
 }
 
 const Stage = struct {
     cells: std.ArrayList([7]Cell),
     height: usize = 0,
+    shapei: usize = 0,
     float: ?FallingShape = null,
 
-    fn move(self: *@This(), dir: Direction) !void {
-        if (self.float == null) return;
-        const float = &self.float.?;
+    fn set_next_float(self: *@This()) void {
+        self.float = .{
+            .position = Point{
+                .x = 2,
+                .y = self.height + 3,
+            },
+            .shape = SHAPES[self.shapei % SHAPES.len],
+        };
 
-        while (self.cells.items.len < float.position.y + float.shape.height) {
+        self.shapei += 1;
+    }
+
+    /// panics if `[self.float]` is null
+    fn add_height(self: *@This()) !void {
+        const float_y = self.float.?.position.y;
+        const float_h = self.float.?.shape.height;
+
+        while (self.cells.items.len < float_y + float_h) {
             var row: [7]Cell = undefined;
             @memset(&row, .N);
             try self.cells.append(row);
         }
+    }
 
+    fn detect_collision(self: @This()) bool {
+        const float = self.float.?;
+        for (float.shape.cells, float.position.y..) |frow, i| {
+            for (float.position.x.., frow) |j, fcell| {
+                if (i >= self.cells.items.len) continue;
+                if (j >= 7) continue;
+                if (self.cells.items[i][j] == .Y and fcell == .Y) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    fn move(self: *@This(), dir: Direction) !void {
+        if (self.float == null) self.set_next_float();
+        const float = &self.float.?;
+        try self.add_height();
+
+        const old_x = float.position.x;
         switch (dir) {
             .Left => if (float.position.x > 0) {
                 float.position.x -= 1;
@@ -64,6 +94,8 @@ const Stage = struct {
                 float.position.x += 1;
             },
         }
+
+        if (self.detect_collision()) float.position.x = old_x;
 
         if (float.position.y == 0) {
             self.set(float.*);
@@ -77,27 +109,12 @@ const Stage = struct {
 
         if (float.position.y > self.height) return;
 
-        var still_falling = false;
+        if (!self.detect_collision()) return;
 
-        outer: for (0..float.shape.height) |shape_y| {
-            const stage_y = shape_y + float.position.y;
-            for (0..float.shape.width) |shape_x| {
-                const stage_x = shape_x + float.position.x;
+        float.position.y += 1;
 
-                const stage_cell = self.cells.items[stage_y][stage_x];
-                const shape_cell = float.shape.cells[shape_y][shape_x];
-
-                if (shape_cell == .Y and stage_cell == .Y) {
-                    float.position.y += 1;
-                    still_falling = false;
-                    break :outer;
-                }
-            }
-        }
-
-        if (still_falling) return;
-
-        self.set(float);
+        self.set(float.*);
+        self.height = float.position.y + float.shape.height;
 
         self.float = null;
     }
@@ -120,9 +137,10 @@ const Stage = struct {
     }
 
     fn print(self: @This()) void {
-        for (0..self.cells.len) |i| {
-            const row_ndx = self.cells.len - (i + 1);
-            const row = self.cells[row_ndx];
+        const cells = self.cells.items;
+        for (0..cells.len) |i| {
+            const row_ndx = cells.len - (i + 1);
+            const row = cells[row_ndx];
             for (0..row.len) |j| {
                 const cell = row[j];
 
@@ -189,9 +207,9 @@ pub const SHAPES = [_]Shape{ .{
     .height = 3,
 }, .{
     .cells = .{
-        .{ N, N, Y, N },
-        .{ N, N, Y, N },
         .{ Y, Y, Y, N },
+        .{ N, N, Y, N },
+        .{ N, N, Y, N },
         .{ N, N, N, N },
     },
     .width = 3,
