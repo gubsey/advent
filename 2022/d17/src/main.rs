@@ -9,13 +9,57 @@ use std::{
 use tap::Pipe;
 
 fn main() {
-    let mut stage = Stage::default();
+    let input = stdin().lines().next().unwrap().unwrap();
+    let input = input.trim();
+    let input_len = input.len();
 
-    for _ in stage.moves.clone().take(20) {
+    let mut stage = Stage::new(input);
+
+    // part 1
+    while stage.rocks.count <= 2022 {
         stage.next();
-        stage.print();
-        println!();
     }
+
+    println!("{}", stage.height);
+
+    // part 2 might not work for your input
+    // part 2
+    let mut stage = Stage::new(input);
+    let mut a = 1600;
+
+    for i in 0..99999 {
+        if (i + a) % input_len == 0 {
+            print!("{}, ", stage.height);
+            a += 1;
+        }
+        stage.next();
+    }
+}
+
+#[test]
+fn example() {
+    let mut stage = Stage::new(include_str!("../example.txt").trim());
+
+    while stage.rocks.count <= 2022 {
+        stage.next();
+    }
+
+    stage.print(10);
+
+    assert_eq!(stage.height, 3068);
+}
+
+#[test]
+fn falling_past() {
+    let mut stage = Stage::new(
+        ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    );
+
+    while stage.rocks.count <= 11 {
+        stage.next();
+    }
+    stage.print(10);
+    println!("{}", stage.height);
 }
 
 #[derive(Default, Clone, Copy)]
@@ -42,7 +86,7 @@ fn parse_rocks(rock_strings: &str) -> Vec<Rock> {
     let mut rocks = vec![];
     for rock_str in rock_strings.split("\n\n") {
         let mut rock = Rock::default();
-        for (i, line) in rock_str.lines().enumerate() {
+        for (i, line) in rock_str.lines().rev().enumerate() {
             for (j, c) in line.char_indices() {
                 rock[i][j] = c == '#';
                 rock.width = j + 1;
@@ -55,7 +99,7 @@ fn parse_rocks(rock_strings: &str) -> Vec<Rock> {
 }
 
 struct Stage {
-    board: Vec<[bool; 7]>,
+    board: Vec<[usize; 7]>,
     rocks: RocksIter,
     moves: Cycle<IntoIter<Move>>,
     falling: Option<(Rock, Vec2D)>,
@@ -63,10 +107,21 @@ struct Stage {
 }
 
 impl Stage {
-    fn print(&self) {
-        for (y, row) in self.board.iter().enumerate().rev() {
+    fn print(&self, limit: usize) {
+        for (y, row) in self
+            .board
+            .iter()
+            .enumerate()
+            .rev()
+            .filter(|(_, x)| x.iter().any(|y| *y > 0))
+            .take(limit)
+        {
             for (x, cell) in row.iter().enumerate() {
-                let mut c = if *cell { '#' } else { '.' };
+                let mut c = if *cell == 0 {
+                    '.'
+                } else {
+                    cell.to_string().as_bytes().last().copied().unwrap() as char
+                };
                 if let Some((r, p)) = self.falling {
                     if (p.x..p.x + 4).contains(&x)
                         && (p.y..p.y + 4).contains(&y)
@@ -79,66 +134,106 @@ impl Stage {
             }
             println!(" | {y}");
         }
+        println!();
+    }
+
+    fn set(&mut self) {
+        let Some((rock, pos)) = self.falling.take() else {
+            return;
+        };
+        for i in 0..rock.height {
+            for j in 0..rock.width {
+                if rock[i][j] {
+                    self.board[i + pos.y][j + pos.x] = self.rocks.count;
+                }
+                self.height = self.height.max(rock.height + pos.y);
+            }
+        }
+    }
+
+    fn new(moves: &str) -> Self {
+        Stage {
+            board: vec![],
+            rocks: include_str!("../rocks.txt")
+                .pipe(parse_rocks)
+                .pipe(RocksIter::new),
+            moves: moves
+                .chars()
+                .map(|c| match c {
+                    '<' => Move::Left,
+                    '>' => Move::Right,
+                    _ => panic!("{c} is not a valid input"),
+                })
+                .collect::<Vec<_>>()
+                .into_iter()
+                .cycle(),
+            falling: None,
+            height: 0,
+        }
+    }
+
+    fn check_collision(&self) -> bool {
+        let Some((rock, pos)) = self.falling else {
+            return false;
+        };
+        for i in 0..rock.height {
+            for j in 0..rock.width {
+                if rock[i][j] && self.board[i + pos.y][j + pos.x] > 0 {
+                    return true;
+                }
+            }
+        }
+
+        false
     }
 }
 
 impl Iterator for Stage {
     type Item = ();
     fn next(&mut self) -> Option<()> {
-        let float = match self.falling.as_mut() {
-            Some(x) => x,
-            None => {
-                let r = (self.rocks.next().unwrap(), xy(2, self.height + 3));
+        if self.falling.is_none() {
+            let r = (self.rocks.next()?, xy(2, self.height + 3));
 
-                while self.board.len() < self.height + r.0.height + 3 {
-                    self.board.push(Default::default());
-                }
-
-                self.falling = Some(r);
-                self.falling.as_mut().unwrap()
+            while self.board.len() < self.height + r.0.height + 3 {
+                self.board.push(Default::default());
             }
-        };
 
-        let mv = self.moves.next().unwrap();
+            self.falling = Some(r);
+        }
+
+        let old_x = self.falling?.1.x;
+        let mv = self.moves.next()?;
         match mv {
             Move::Left => {
-                if float.1.x > 0 {
-                    float.1.x -= 1
+                if self.falling?.1.x > 0 {
+                    self.falling.as_mut()?.1.x -= 1
                 }
             }
             Move::Right => {
-                if float.1.x + float.0.width < 7 {
-                    float.1.x += 1
+                if self.falling?.1.x + self.falling?.0.width < 7 {
+                    self.falling.as_mut()?.1.x += 1
                 }
             }
         }
 
-        float.1.y -= 1;
-
-        if float.1.y > self.height {
-            return Some(())
+        if self.check_collision() {
+            self.falling.as_mut()?.1.x = old_x;
         }
 
-        
-        if float.1.y > 0 {
+        if self.falling?.1.y == 0 {
+            self.set();
+            return Some(());
+        }
+        self.falling.as_mut()?.1.y -= 1;
+
+        if self.falling?.1.y >= self.height {
             return Some(());
         }
 
-        let float = self.falling.take().unwrap();
-        let float_p = float.1;
-        for (i, row) in float.0.into_iter().enumerate() {
-            if i == float.0.height {
-                break;
-            }
-            for (j, cell) in row.into_iter().enumerate() {
-                if j == float.0.width {
-                    break;
-                };
-                self.board[i + float_p.y][j + float_p.x] |= cell;
-            }
+        if self.check_collision() {
+            self.falling.as_mut()?.1.y += 1;
+            self.set();
         }
-
-        self.height = float.0.height.max(self.height);
 
         Some(())
     }
@@ -161,33 +256,6 @@ impl Iterator for RocksIter {
         let r = self.rocks[self.count % self.rocks.len()];
         self.count += 1;
         Some(r)
-    }
-}
-
-impl Default for Stage {
-    fn default() -> Self {
-        Stage {
-            board: vec![],
-            rocks: include_str!("../rocks.txt")
-                .pipe(parse_rocks)
-                .pipe(RocksIter::new),
-            moves: stdin()
-                .lines()
-                .next()
-                .unwrap()
-                .unwrap()
-                .chars()
-                .map(|c| match c {
-                    '<' => Move::Left,
-                    '>' => Move::Right,
-                    _ => panic!("{c} is not a valid input"),
-                })
-                .collect::<Vec<_>>()
-                .into_iter()
-                .cycle(),
-            falling: None,
-            height: 0,
-        }
     }
 }
 
