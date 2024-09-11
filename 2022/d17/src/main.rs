@@ -28,7 +28,7 @@ fn main() {
     let mut a = 1600;
 
     for i in 0..99999 {
-        if (i + a) % input_len == 0 {
+        if i % (input_len - a) == 0 {
             print!("{}, ", stage.height);
             a += 1;
         }
