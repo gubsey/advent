@@ -1,7 +1,6 @@
-use std::{io::stdin, thread::sleep, time::Duration};
+use std::io::stdin;
 
 use macroquad::prelude::*;
-use miniquad::window::set_window_size;
 
 #[macroquad::main("hi")]
 async fn main() {
@@ -13,20 +12,21 @@ async fn main() {
         .collect();
 
     let mut t = 0.;
-    let r = 35.;
+    let r = 27.;
     let center = 11.;
 
     loop {
-        clear_background(LIGHTGRAY);
+        clear_background(DARKBROWN);
 
         t += get_frame_time() * 0.7;
         t %= 360.;
 
-        let x = r * t.cos();
-        let z = r * t.sin();
+        let x = r * t.cos() * 1.2;
+        let y = r * t.sin() * 1.1;
+        let z = r * t.sin() * 1.3;
 
         set_camera(&Camera3D {
-            position: vec3(x + center, 30. + center, z + center),
+            position: vec3(x + center, y + center, z + center),
             up: vec3(0., 1., 0.),
             target: vec3(10., 10., 10.),
             ..Default::default()
