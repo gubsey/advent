@@ -6,4 +6,7 @@ main = do
   print . p2 $ cat
   
 p1 = sum . map abs . foldl1 (zipWith (-)) . map sort . transpose . map (map read . words) . lines
-p2 = sum . f . transpose . map (map read . words) . lines where f [a,b] = map (\x -> x * length (filter (== x) b)) a
+p2 s = 
+  let [a, b] = transpose . map (map read . words) . lines $ s in
+  let f x = x * length (filter (== x) b) in
+  sum $ map f a
