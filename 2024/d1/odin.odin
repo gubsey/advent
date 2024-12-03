@@ -1,7 +1,7 @@
 package main
 
+import ".../../lib"
 import "core:fmt"
-import "core:log"
 import "core:os"
 import "core:slice"
 import "core:strconv"
@@ -42,23 +42,10 @@ p2 :: proc(input: string) -> int {
 }
 
 main :: proc() {
-	cat := get_stdin()
+	cat := lib.get_stdin()
 	defer delete(cat)
 	fmt.println(p1(cat))
 	fmt.println(p2(cat))
-}
-
-get_stdin :: proc() -> string {
-	catb: strings.Builder
-	buf: [1024]u8
-	for {
-		n, err := os.read(os.stdin, buf[:])
-		strings.write_bytes(&catb, buf[:n])
-		if n < 1024 {
-			break
-		}
-	}
-	return strings.trim_space(strings.to_string(catb))
 }
 
 input_lists :: proc(lines: []string) -> (a: [dynamic]int, b: [dynamic]int) {
@@ -72,4 +59,3 @@ input_lists :: proc(lines: []string) -> (a: [dynamic]int, b: [dynamic]int) {
 	}
 	return
 }
-
