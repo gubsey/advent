@@ -1,3 +1,5 @@
+pub mod parser;
+
 use std::{fs, time::Instant};
 
 trait MyFn {
