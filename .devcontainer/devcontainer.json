@@ -1,3 +1,5 @@
 {
-    "image": "archlinux"
+	"build": {
+		"dockerfile": "Dockerfile"
+	}
 }
