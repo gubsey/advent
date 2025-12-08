@@ -16,7 +16,7 @@ impl MyFn for FF {
     }
 }
 
-trait AdventFn: Fn(&str) -> String + 'static {}
+pub trait AdventFn: Fn(&str) -> String + 'static {}
 
 type FF = Box<dyn Fn(&str) -> String + 'static>;
 
@@ -56,9 +56,14 @@ impl AdventParts {
         } else {
             "example.txt"
         };
-        let input = fs::read_to_string(file).expect(&format!("Could not read {file:?}"));
+        let input = fs::read_to_string(file)
+            .unwrap_or_else(|e| panic!("{}", format!("{e}\nCould not read {file:?}")));
 
-        self.p1.map(|f| f.run(&input, 1));
-        self.p2.map(|f| f.run(&input, 2));
+        if let Some(f) = self.p1 {
+            f.run(&input, 1)
+        }
+        if let Some(f) = self.p2 {
+            f.run(&input, 2)
+        }
     }
 }

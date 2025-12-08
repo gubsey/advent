@@ -4,5 +4,6 @@
 !*.*
 target
 in.txt
+input.txt
 *.hi
 *.o
