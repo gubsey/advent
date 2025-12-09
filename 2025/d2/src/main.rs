@@ -24,7 +24,6 @@ fn main() {
             }
             true
         })
-        .inspect(|x| println!("{x}"))
         .sum();
 
     let p2: u64 = ids
@@ -40,7 +39,6 @@ fn main() {
             }
             false
         })
-        .inspect(|x| println!("{x}"))
         .sum();
     println!("p1: {p1}\np2: {p2}");
 }
