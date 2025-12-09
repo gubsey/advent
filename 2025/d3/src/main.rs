@@ -34,11 +34,10 @@ fn max_joltage(batteries: &[usize], digits: usize) -> usize {
     let mut start = 0;
 
     for digits_remaining in (0..digits).rev() {
-        let slice = &batteries[start..batteries.len() - digits_remaining];
-        println!("{slice:?}");
-        let (i, n) = slice
+        let (i, n) = batteries[start..batteries.len() - digits_remaining]
             .iter()
-            .enumerate().rev()
+            .enumerate()
+            .rev()
             .max_by_key(|x| *x.1)
             .unwrap();
         start += i + 1;
