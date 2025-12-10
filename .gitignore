@@ -7,3 +7,7 @@ in.txt
 input.txt
 *.hi
 *.o
+
+# Added by cargo
+
+/target
