@@ -30,20 +30,30 @@ fn main() {
         }
     }
 
-    let p1 = ops.into_iter().zip(nums).map(f).sum::<usize>();
+    let p1 = ops.iter().copied().zip(nums).map(f).sum::<usize>();
 
-    let nums2 = lines.iter().enumerate().fold(
-        repeat_with(|| vec![' '; lines.len()])
-            .take(ops.len())
-            .collect::<Vec<_>>(),
-        |mut acc, (x, line)| {
-            for (y, c) in line.char_indices() {
-                acc[y][x] = c;
-            }
-            acc
-        },
-    );
-    println!("{nums2:?}");
+    let nums2 = lines
+        .iter()
+        .enumerate()
+        .fold(
+            repeat_with(|| vec![' '; lines.len()])
+                .take(lines[0].len())
+                .collect::<Vec<_>>(),
+            |mut acc, (x, line)| {
+                for (y, c) in line.char_indices() {
+                    acc[y][x] = c;
+                }
+                acc
+            },
+        )
+        .into_iter()
+        .map(|v| v.into_iter().collect::<String>().trim().parse::<usize>())
+        .collect::<Vec<_>>();
+    let nums2 = nums2
+        .split(|r| r.is_err())
+        .map(|x| x.iter().cloned().map(Result::unwrap).collect::<Vec<_>>())
+        .collect::<Vec<_>>();
+    let p2 = ops.into_iter().zip(nums2).map(f).sum::<usize>();
 
-    println!("p1: {p1}");
+    println!("p1: {p1}\np2: {p2}");
 }
