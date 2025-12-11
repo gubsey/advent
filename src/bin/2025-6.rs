@@ -5,7 +5,7 @@ fn main() {
     let ops = lines.pop().unwrap();
     let ops = ops.split(' ').filter(|s| !s.is_empty()).collect::<Vec<_>>();
     let nums = lines
-        .into_iter()
+        .iter()
         .map(|s| {
             s.split(' ')
                 .filter(|s| !s.is_empty())
@@ -22,16 +22,28 @@ fn main() {
             },
         );
 
-    let p1 = ops
-        .into_iter()
-        .zip(nums)
-        .inspect(|x| println!("{x:?}"))
-        .map(|(o, v)| match o {
+    fn f((o, v): (&str, Vec<usize>)) -> usize {
+        match o {
             "+" => v.into_iter().sum::<usize>(),
             "*" => v.into_iter().product(),
             _ => panic!(),
-        })
-        .sum::<usize>();
+        }
+    }
+
+    let p1 = ops.into_iter().zip(nums).map(f).sum::<usize>();
+
+    let nums2 = lines.iter().enumerate().fold(
+        repeat_with(|| vec![' '; lines.len()])
+            .take(ops.len())
+            .collect::<Vec<_>>(),
+        |mut acc, (x, line)| {
+            for (y, c) in line.char_indices() {
+                acc[y][x] = c;
+            }
+            acc
+        },
+    );
+    println!("{nums2:?}");
 
     println!("p1: {p1}");
 }
