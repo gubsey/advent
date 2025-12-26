@@ -1,9 +1,7 @@
-use std::{
-    collections::{HashMap, HashSet},
-    io::stdin,
-};
+use std::{collections::HashSet, io::stdin};
 
 fn main() {
+    let mut len = 0;
     let mut map = stdin()
         .lines()
         .map(Result::unwrap)
@@ -12,7 +10,10 @@ fn main() {
                 .enumerate()
                 .filter_map(|(i, c)| match c {
                     'S' | '^' => Some(i),
-                    _ => None,
+                    _ => {
+                        len = len.max(i);
+                        None
+                    }
                 })
                 .collect::<HashSet<_>>()
         })
@@ -32,19 +33,21 @@ fn main() {
             Some(splits)
         })
         .collect::<Vec<_>>();
-    let mut timelines = HashMap::new();
-    timelines.insert(start_v, 1i128);
+
+    let mut timelines = vec![0u128; len + 1];
+    timelines[start_v] = 1;
     for set in sets {
         for item in set {
-            if let Some(x) = timelines.remove(&item) {
-                *timelines.entry(item - 1).or_default() += x;
-                *timelines.entry(item + 1).or_default() += x;
-            }
+            let x = timelines[item];
+            timelines[item - 1] += x;
+            timelines[item + 1] += x;
+            timelines[item] = 0;
         }
     }
+    let t_sum: u128 = timelines.iter().sum();
     println!(
         "p1: {}\np2: {}",
         p1_splits.iter().copied().sum::<usize>(),
-        timelines.into_values().sum::<i128>()
+        t_sum
     );
 }
