@@ -1,8 +1,8 @@
 FROM  archlinux:latest
 
 # Install dependencies
-RUN	 pacman -Syyu --noconfirm sudo openssh bash-completion vim git rust zig helix podman rust-analyzer
-RUN  pacman -S --noconfirm cargo
+RUN	 pacman -Syu --noconfirm sudo openssh bash-completion vim git zig helix podman \
+    rust rust-src rust-analyzer cargo
 
 # Generate host keys
 RUN  /usr/bin/ssh-keygen -A

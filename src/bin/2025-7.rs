@@ -22,32 +22,35 @@ fn main() {
     let start_v = start.iter().copied().next().unwrap();
     let sets = map.collect::<Vec<_>>();
 
-    let p1_splits = sets
-        .iter()
-        .scan(start, |acc, v| {
-            let mut v = v.clone();
+    let p1 = sets
+        .clone()
+        .into_iter()
+        .scan(start, |acc, mut v| {
             v.retain(|x| acc.contains(x));
             let splits = v.len();
             acc.retain(|x| !v.contains(x));
             acc.extend(v.into_iter().flat_map(|x| [x - 1, x + 1]));
             Some(splits)
         })
-        .collect::<Vec<_>>();
+        .sum::<usize>();
 
-    let mut timelines = vec![0u128; len + 1];
-    timelines[start_v] = 1;
-    for set in sets {
-        for item in set {
-            let x = timelines[item];
-            timelines[item - 1] += x;
-            timelines[item + 1] += x;
-            timelines[item] = 0;
-        }
-    }
-    let t_sum: u128 = timelines.iter().sum();
-    println!(
-        "p1: {}\np2: {}",
-        p1_splits.iter().copied().sum::<usize>(),
-        t_sum
-    );
+    let p2: u64 = sets
+        .into_iter()
+        .flatten()
+        .fold(
+            (0..=len)
+                .map(|x| if x == start_v { 1 } else { 0 })
+                .collect(),
+            |mut timelines: Vec<u64>, item| {
+                let x = timelines[item];
+                timelines[item - 1] += x;
+                timelines[item + 1] += x;
+                timelines[item] = 0;
+                timelines
+            },
+        )
+        .into_iter()
+        .sum();
+
+    println!("p1: {}\np2: {}", p1, p2);
 }
