@@ -4,7 +4,6 @@ use std::{
     fmt::Debug,
     hash::Hash,
     io::stdin,
-    ops::{Deref, DerefMut, Not},
 };
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
