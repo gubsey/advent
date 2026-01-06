@@ -1,7 +1,9 @@
 FROM  archlinux:latest
 
 # Install dependencies
-RUN	 pacman -Syu --noconfirm sudo openssh bash-completion vim git zig helix podman \
+RUN	 pacman -Syu --noconfirm sudo openssh bash-completion \
+    vim git zig helix podman \
+    base-devel \
     rust rust-src rust-analyzer cargo
 
 # Generate host keys
@@ -11,8 +13,6 @@ RUN  /usr/bin/ssh-keygen -A
 RUN  useradd vscode
 RUN  mkdir -p /home/vscode/.ssh
 RUN  chmod -R 700 /home/vscode/.ssh/
-RUN  echo "YOUR_SSH_PUBLIC_KEY" > home/vscode/.ssh/authorized_keys
-RUN  chmod 600 /home/vscode/.ssh/authorized_keys
 RUN  chown -R vscode:vscode /home/vscode/
 RUN  usermod -aG wheel vscode
 RUN  echo '%wheel ALL=(ALL:ALL) NOPASSWD: ALL' >> /etc/sudoers

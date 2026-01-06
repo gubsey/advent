@@ -5,7 +5,7 @@
 target
 in.txt
 input.txt
-example.txt
+ex*.txt
 *.hi
 *.o
 
