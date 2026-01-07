@@ -1,4 +1,4 @@
-use std::{collections::HashMap, io::stdin, iter::once};
+use std::io::stdin;
 
 fn main() {
     let points = stdin()
