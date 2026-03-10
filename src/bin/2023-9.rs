@@ -53,7 +53,7 @@ impl Report {
                 .unwrap()
                 .array_windows()
                 .fold(Vec::new(), |mut acc, &[a, b]| {
-                    acc.push(a - b);
+                    acc.push(b - a);
                     acc
                 });
 
