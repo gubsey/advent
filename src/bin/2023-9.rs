@@ -48,10 +48,14 @@ impl Report {
         let mut r = vec![v];
 
         loop {
-            let next = r.last().unwrap().windows(2).fold(Vec::new(), |mut acc, x| {
-                acc.push(x[1] - x[0]);
-                acc
-            });
+            let next = r
+                .last()
+                .unwrap()
+                .array_windows()
+                .fold(Vec::new(), |mut acc, &[a, b]| {
+                    acc.push(a - b);
+                    acc
+                });
 
             if !next.iter().all(|x| *x == 0) {
                 r.push(next);
