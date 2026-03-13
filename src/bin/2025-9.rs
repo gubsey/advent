@@ -165,3 +165,13 @@ impl<'a> InOutChecker<'a> {
         }
     }
 }
+
+/* hack
+he idea is not to divide them by some number but remap them. 
+like take all the x coordinates, sort and unique them then, 
+map them to an increasing integer sequence where you also take care of gaps.
+
+eg:
+
+[1, 2, 4, 6, 9, 10, 16] -> [0, 1, 3, 5, 7, 8, 10]
+ */
