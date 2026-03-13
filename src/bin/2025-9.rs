@@ -1,7 +1,6 @@
 use std::{
     cmp::Reverse,
-    collections::{HashMap, HashSet, hash_map::OccupiedEntry},
-    hash::Hash,
+    collections::{HashMap, HashSet},
     io::stdin,
     iter::once,
 };
@@ -39,11 +38,47 @@ fn main() {
         |[mix, miy, max, may], [x, y]| [mix.min(x), miy.min(y), max.max(x), may.max(y)],
     );
 
+    let (mut vecx, mut vecy) = points.iter().step_by(2).copied().fold(
+        (Vec::new(), Vec::new()),
+        |(mut vx, mut vy), [x, y]| {
+            vx.push(x);
+            vy.push(y);
+            (vx, vy)
+        },
+    );
+    vecx.sort();
+    vecy.sort();
+    let x_mappings = vecx
+        .iter()
+        .copied()
+        .zip(compress(&vecx))
+        .collect::<HashMap<_, _>>();
+    let x_mappings_rev = x_mappings
+        .iter()
+        .map(|(&k, &v)| (v, k))
+        .collect::<HashMap<_, _>>();
+    let y_mappings = vecy
+        .iter()
+        .copied()
+        .zip(compress(&vecy))
+        .collect::<HashMap<_, _>>();
+    let y_mappings_rev = y_mappings
+        .iter()
+        .map(|(&k, &v)| (v, k))
+        .collect::<HashMap<_, _>>();
+    let mapped_points = points
+        .iter()
+        .copied()
+        .map(|[x, y]| [x_mappings[&x], y_mappings[&y]])
+        .collect::<Vec<_>>();
     let mut walls = HashSet::new();
 
-    points
+    mapped_points
         .array_windows()
-        .chain(once(&[points.last().copied().unwrap(), points[0]]))
+        .chain(once(&[
+            mapped_points.last().copied().unwrap(),
+            mapped_points[0],
+        ]))
         .for_each(|&[[ax, ay], [bx, by]]| {
             if ax == bx {
                 let [min, max] = [ay.min(by), ay.max(by)];
@@ -57,6 +92,19 @@ fn main() {
                 }
             }
         });
+
+    println!("{x_mappings:?}");
+
+    for y in 0..=x_mappings[vecx.last().unwrap()] {
+        for x in 0..=y_mappings[vecy.last().unwrap()] {
+            if walls.contains(&[x, y]) {
+                print!("#");
+            } else {
+                print!(".");
+            }
+        }
+        println!();
+    }
 
     let mut inner_boxes = points
         .iter()
@@ -167,11 +215,22 @@ impl<'a> InOutChecker<'a> {
 }
 
 /* hack
-he idea is not to divide them by some number but remap them. 
-like take all the x coordinates, sort and unique them then, 
+he idea is not to divide them by some number but remap them.
+like take all the x coordinates, sort and unique them then,
 map them to an increasing integer sequence where you also take care of gaps.
 
 eg:
 
 [1, 2, 4, 6, 9, 10, 16] -> [0, 1, 3, 5, 7, 8, 10]
  */
+
+fn compress(v: &Vec<usize>) -> Vec<usize> {
+    println!("{v:?}");
+
+    v.array_windows().fold(vec![0], |mut acc, &[a, b]| {
+        let last = acc.last().unwrap();
+        acc.push(if b - a > 1 { last + 2 } else { last + 1 });
+        println!("{acc:?}");
+        acc
+    })
+}
